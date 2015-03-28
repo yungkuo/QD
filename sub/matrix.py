@@ -7,7 +7,7 @@ Created on Mon Jan 19 00:13:52 2015
 from __future__ import division
 import numpy as np
 import parameter
-from scipy.sparse import coo_matrix, eye, diags
+from scipy.sparse import csr_matrix, eye, diags
 
 
 def inhomo_laplacian(m, dr, n, dz, r, r_boundary, z_boundary, c_array, cylinderical = True):    
@@ -18,8 +18,11 @@ def inhomo_laplacian(m, dr, n, dz, r, r_boundary, z_boundary, c_array, cylinderi
     if r_boundary == 2:          # 2: Neumann condition
         ddr[0:n,n:2*n] *= 2
         ddr[(m-1)*n:m*n,(m-2)*n:(m-1)*n] *= 2
-    dcoeffdr = ddr # for calculating coefficient matrix w different boundary condition
-    dcoeffdr[(m-1)*n:m*n,(m-2)*n:(m-1)*n] = np.zeros((n,n))
+    dcoeffdr = eye(m*n,k=n)+eye(m*n,k=-n)*-1 # for calculating coefficient matrix w different boundary condition
+    dcoeffdr /= (2*dr)
+    dcoeffdr = dcoeffdr.todense()
+    dcoeffdr[(m-1)*n:m*n,(m-2)*n:(m-1)*n] *= 2
+    dcoeffdr[0:n,n:2*n] *= 2
     
     ddz = eye(n,k=1) + eye(n,k=-1)*-1 
     ddz /= (2*dz)
@@ -27,11 +30,13 @@ def inhomo_laplacian(m, dr, n, dz, r, r_boundary, z_boundary, c_array, cylinderi
     if z_boundary==2:   # continuous slope 
         ddz[n-1,n-2] *= 2  # 2 gor neumann condition
         ddz[0,1] *= 2    #your choice
-    dcoeffdz = ddz
-    dcoeffdz[n-1,n-2]=0
-    dcoeffdz[0,1]=0
+    dcoeffdz = (eye(n,k=1) + eye(n,k=-1)*-1 ) / (2*dz)
+    dcoeffdz = dcoeffdz.todense()
+    dcoeffdz[n-1,n-2] *= 2
+    dcoeffdz[0,1] *= 2
     
-    ddzM = dcoeffdzM = np.zeros((m*n, m*n))
+    ddzM =  np.zeros((m*n, m*n))
+    dcoeffdzM = np.zeros((m*n, m*n))
     
     for i in range(m):
         dcoeffdzM[i*n:n*(i+1),i*n:n*(i+1)] = dcoeffdz
@@ -55,7 +60,7 @@ def inhomo_laplacian(m, dr, n, dz, r, r_boundary, z_boundary, c_array, cylinderi
     laplacX = laplacX.todense()
     if r_boundary==2:
         laplacX[0:n,n:2*n] *= 2
-        laplacX[(m-1)*n:m*n,(m-2)*n:(m-1)*n] *=2
+        laplacX[(m-1)*n:m*n,(m-2)*n:(m-1)*n] *= 2
     laplac += laplacX
     
     c_over_r = np.zeros((m*n,1))
@@ -77,7 +82,7 @@ def inhomo_laplacian(m, dr, n, dz, r, r_boundary, z_boundary, c_array, cylinderi
     inhomo_lap[n:2*n,n:2*n] += inhomo_lap[n:2*n,0:n]*(1)
     inhomo_lap[n:2*n,2*n:3*n] += inhomo_lap[n:2*n,0:n]*(0)
     inhomo_lap = inhomo_lap[n:m*n,n:m*n]
-    inhomo_lap = coo_matrix(inhomo_lap)
+    inhomo_lap = csr_matrix(inhomo_lap)
     
     return inhomo_lap
     
