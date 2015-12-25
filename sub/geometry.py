@@ -8,6 +8,62 @@ from __future__ import division
 import numpy as np
 import parameter
 
+def map2d(m, n, r, z, zo, material, radius):
+    """ Construct geometry array """
+    cb = np.ones(shape=(m,n)) * 0
+    vb = np.ones(shape=(m,n)) * 10
+    er = np.ones(shape=(m,n)) * 8.6
+    me = np.ones(shape=(m,n)) / material[0].me
+    mh = np.ones(shape=(m,n)) / material[0].mh
+    geo = np.zeros(shape=(m,n))
+    idx = 0
+    for rad in radius:
+        idx += 1
+        for ridx, ra in enumerate(r):
+            for zidx, zz  in enumerate(z):
+                square = ra**2 + (zz-(zo/2))**2
+                if square  <= rad**2 :
+                    geo[ridx, zidx] = idx  # outmost
+
+    for idx in range(len(radius)):
+        temp = idx + 1
+        for i in range(m):
+            for j in range(n):
+                if geo[i,j] == temp:   # Boundary  CdS
+                    er[i,j] = material[idx].er
+                    cb[i,j] = 0 - material[idx].cb
+                    vb[i,j] = material[idx].vb
+                    me[i,j] = 1 / material[idx].me
+                    mh[i,j] = 1 / material[idx].mh
+
+    cb_array = cb.reshape(m*n, 1) 
+    vb_array = vb.reshape(m*n, 1) 
+    er_array = er.reshape(m*n,1)
+    me_array = me.reshape(m*n,1)
+    mh_array = mh.reshape(m*n,1)
+    return er, cb, vb, me, mh
+
+def map1d(x, dx, n, material, geometry):
+    """ Construct geometry array """
+    cb = np.zeros(n) 
+    vb = np.ones(n) * 10
+    er = np.ones(n) 
+    me = np.ones(n) / material[0].me
+    mh = np.ones(n) / material[0].mh
+    geo = np.zeros(n)
+    geoidx = geometry/dx
+    j = 1
+    for i in range(len(geometry)-3):
+        geo[geoidx[i+1]:geoidx[i+2]] = j
+        er[geoidx[i+1]:geoidx[i+2]] = material[i].er
+        cb[geoidx[i+1]:geoidx[i+2]] = 0 - material[i].cb
+        vb[geoidx[i+1]:geoidx[i+2]] = material[i].vb
+        me[geoidx[i+1]:geoidx[i+2]] = 1 / material[i].me
+        mh[geoidx[i+1]:geoidx[i+2]] = 1 / material[i].mh
+        j += 1
+
+    return er, cb, vb, me, mh
+
 def geo1d(material, L, Qw, msize, *bo):
     if material == 'CdSe':
         param = parameter.CdSe()

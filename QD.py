@@ -46,13 +46,13 @@ e_barrier = param[6]
 hole_barrier = param[7]
 
 """ Define Geometry  """
-ro = 6e-9
-dr = 2e-10
+ro = 5e-9
+dr = 1e-10
 r = np.linspace(0, ro, ro/dr+1)
-zo = 12e-9
-dz = 2e-10
+zo = 14e-9
+dz = 1e-10
 z = np.linspace(0,zo, zo/dz+1)
-rqd = 2e-9  #r_max boundary of NR,    too reduce computation time
+rqd = 1.5e-9  #r_max boundary of NR,    too reduce computation time
 zout = 2e-9  #Z_min and max boundary of NR
 nrqd_limit = int(ro/dr)
 nzout_limit = int(zout/dz)
@@ -74,7 +74,7 @@ for i in range(m):
             geo[i,j] = 2  # Boundary
         elif r[i]**2 + (z[j]-(zo/2))**2 <= rqd**2:
             geo[i,j] = 3  # Inside QD
-
+            
 for i in range(m):
     for j in range(n):
         if geo[i,j] == 2:   # Boundary
@@ -121,21 +121,30 @@ def int_cyl(function, r, n, dr, dz): # return cylindrical integration of functio
     int_val = np.sum(fsquare) * dr * dz* 2 * np.pi
     return int_val
 
+def int_cyl2(function, r, n, dr, dz): # return cylindrical integration of function**2
+    for i, rad in enumerate(r[1:]):
+        function[:n*i] *= rad
+    int_val = np.sum(function) * dr * dz* 2 * np.pi
+    return int_val
+    
 psi_e = eef[:,0] / np.sqrt(int_cyl(eef[:,0], r, n, dr, dz)) 
-psi_h = hef[:,0] / np.sqrt(int_cyl(eef[:,0], r, n, dr, dz))
+psi_h = hef[:,0] / np.sqrt(int_cyl(hef[:,0], r, n, dr, dz))
 psi_e2 = np.real(psi_e * np.conjugate(psi_e))
 psi_h2 = np.real(psi_h * np.conjugate(psi_h))
+
 temp = psi_e2.reshape((m-1),n)
-
-
 #fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (12,6))
 ax2.plot(z, psi_e[:n], color = 'blue', label = 'Electron Wavefunction')
 ax2.plot(z, psi_h[:n], color = 'red', label = 'Hole Wavefunction')
 ax2.axvline(zo/2+rqd, color = 'g', linestyle = '--')
 ax2.axvline(zo/2 - rqd, color = 'g', linestyle = '--')
 ax2.legend()
-ax3.contourf(r[1:],z,temp.transpose())
+ax3.contourf(r[1:], z, temp.transpose())
 ax3.set_title('Electron wavefunction')
+
+ehm = np.conjugate(psi_e)*psi_h
+over_inte = int_cyl2(ehm, r, n, dr, dz)
+
 ""
 r_boundary = 1
 z_boundary = 1
@@ -158,3 +167,5 @@ plt.figure()
 plt.plot(z, ve[:n], color = 'b', label = 'e charge')
 plt.plot(z, ve_imc[:n], color = 'g', label = 'Image charge')
 plt.legend()
+
+

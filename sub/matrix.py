@@ -9,7 +9,6 @@ import numpy as np
 import parameter
 from scipy.sparse import csr_matrix, eye, diags
 
-
 def inhomo_laplacian(m, dr, n, dz, r, r_boundary, z_boundary, c_array, cylinderical = True):    
     
     ddr = eye(m*n,k=n)+eye(m*n,k=-n)*-1  # derivative over rho
@@ -17,7 +16,7 @@ def inhomo_laplacian(m, dr, n, dz, r, r_boundary, z_boundary, c_array, cylinderi
     ddr = ddr.todense()
     if r_boundary == 2:          # 2: Neumann condition
         ddr[0:n,n:2*n] *= 2
-        ddr[(m-1)*n:m*n,(m-2)*n:(m-1)*n] *= 2
+        #ddr[(m-1)*n:m*n,(m-2)*n:(m-1)*n] *= 2
     dcoeffdr = eye(m*n,k=n)+eye(m*n,k=-n)*-1 # for calculating coefficient matrix w different boundary condition
     dcoeffdr /= (2*dr)
     dcoeffdr = dcoeffdr.todense()
